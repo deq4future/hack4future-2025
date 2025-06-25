@@ -1,0 +1,1413 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
+import random
+import time
+from datetime import datetime
+import requests
+import json
+import threading
+import os
+from tkinter import font as tkfont
+import sys
+
+class MathGameApp:
+    def __init__(self):
+        """Inicialitza l'aplicació del joc de matemàtiques"""
+        self.root = tk.Tk()
+        self.root.title("Domath - Joc de Matemàtiques")
+        self.root.geometry("800x700")
+        self.root.configure(bg="#f5f5f5")
+        
+        # Configuració d'estil avançada
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        
+        # Configurar fonts
+        self.title_font = tkfont.Font(family="Helvetica", size=24, weight="bold")
+        self.subtitle_font = tkfont.Font(family="Helvetica", size=14, slant="italic")
+        self.button_font = tkfont.Font(family="Arial", size=12, weight="bold")
+        self.operation_font = tkfont.Font(family="Courier New", size=28, weight="bold")
+        
+        # Colors moderns
+        self.colors = {
+            'primary': '#3498db',
+            'success': '#2ecc71',
+            'danger': '#e74c3c',
+            'warning': '#f39c12',
+            'info': '#1abc9c',
+            'dark': '#2c3e50',
+            'light': '#ecf0f1',
+            'background': '#f5f5f5'
+        }
+        
+        # Configurar estils
+        self.style.configure('TButton', font=self.button_font, padding=10)
+        self.style.configure('TLabel', background=self.colors['background'])
+        self.style.configure('Treeview', font=('Arial', 10), rowheight=30)
+        self.style.map('TButton',
+                      foreground=[('active', 'white'), ('!active', 'white')],
+                      background=[('active', self.colors['dark']), ('!active', self.colors['primary'])]
+                      )
+        
+        # Variables del joc
+        self.current_operation = ""
+        self.current_result = 0
+        self.score = 0
+        self.question_count = 0
+        self.infinite_mode = False
+        self.selected_operation = None
+        self.start_time = 0
+        self.end_time = 0
+        self.high_scores = []
+        self.difficulty = 1
+        self.lives = 1
+        self.game_id = None
+        self.seed = None
+        self.player_name = ""
+        self.progress_timer = None
+        self.saved_games = []
+        self.animation_running = False
+        
+        # Carregar dades
+        self.load_high_scores()
+        self.load_saved_games()
+        
+        # Inicialitzar joc
+        self.initialize_game()
+        self.show_welcome_screen()
+    
+    def delete_high_scores(self):
+        """Elimina tots els rècords guardats"""
+        if messagebox.askyesno(
+            "Eliminar Rànquings", 
+            "Estàs segur que vols eliminar TOTS els rànquings?\nAquesta acció no es pot desfer."
+        ):
+            self.high_scores = []
+            self.save_high_scores()
+            messagebox.showinfo("Rànquings", "S'han eliminat tots els rànquings.")
+            self.show_high_scores()
+    
+    def show_welcome_screen(self):
+        """Pantalla de benvinguda amb opcions per continuar o començar de nou"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+        
+        # Títol
+        title_label = tk.Label(
+            main_frame,
+            text="Domath",
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack(pady=(20, 10))
+        
+        subtitle_label = tk.Label(
+            main_frame,
+            text="El joc de matemàtiques del Professor Domingo",
+            font=self.subtitle_font,
+            bg=self.colors['background'],
+            fg="#7f8c8d"
+        )
+        subtitle_label.pack(pady=(0, 40))
+        
+        # Botons principals
+        buttons_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        buttons_frame.pack(pady=20)
+        
+        # Botó per a jugador nou
+        new_player_btn = ttk.Button(
+            buttons_frame,
+            text="Nou Jugador",
+            command=self.ask_player_name_and_start,
+            style='TButton'
+        )
+        new_player_btn.pack(pady=10, fill=tk.X)
+        
+        # Botó per a carregar partida (si n'hi ha)
+        if self.saved_games:
+            load_game_btn = ttk.Button(
+                buttons_frame,
+                text="Carregar Partida",
+                command=self.show_load_game_menu,
+                style='TButton'
+            )
+            load_game_btn.pack(pady=10, fill=tk.X)
+        
+        # Botó de sortida
+        exit_btn = ttk.Button(
+            buttons_frame,
+            text="Sortir",
+            command=self.root.quit,
+            style='TButton'
+        )
+        exit_btn.pack(pady=10, fill=tk.X)
+    
+    def ask_player_name_and_start(self):
+        """Demana el nom del jugador i comença el joc"""
+        self.player_name = simpledialog.askstring(
+            "Nom del Jugador", 
+            "Introdueix el teu nom:",
+            parent=self.root
+        )
+        
+        if not self.player_name:
+            self.player_name = "Anònim"
+        
+        self.create_main_menu()
+    
+    def initialize_game(self):
+        """Fes una petició GET a l'API per inicialitzar el joc"""
+        try:
+            response = requests.get("https://fun.codelearn.cat/hackathon/game/new", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                self.game_id = data.get("game_id")
+                self.seed = data.get("seed")
+                print(f"Joc inicialitzat amb ID: {self.game_id} i seed: {self.seed}")
+                random.seed(self.seed)
+            else:
+                print("Error en inicialitzar el joc a l'API")
+                self.seed = random.randint(1, 1000000)
+                random.seed(self.seed)
+        except Exception as e:
+            print(f"Error de connexió: {e}")
+            self.seed = random.randint(1, 1000000)
+            random.seed(self.seed)
+    
+    def store_progress(self):
+        """Notifica el progrés del joc al servidor i guarda localment"""
+        if not self.game_id:
+            return
+            
+        game_data = {
+            "score": self.score,
+            "question_count": self.question_count,
+            "mode": "Infinite" if self.infinite_mode else "Exam",
+            "operation": self.get_operation_name(),
+            "difficulty": self.get_difficulty_name(),
+            "player": self.player_name,
+            "time_elapsed": time.time() - self.start_time if self.start_time else 0,
+            "seed": self.seed,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Guardar localment
+        self.save_game_progress(game_data)
+        
+        # Enviar al servidor
+        try:
+            response = requests.post(
+                "https://fun.codelearn.cat/hackathon/game/store_progress",
+                json={"game_id": self.game_id, "data": game_data},
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if not data.get("ok"):
+                    print(f"Error en guardar progrés: {data.get('reason', 'Unknown error')}")
+        except Exception as e:
+            print(f"Error de connexió en guardar progrés: {e}")
+        
+        # Programar següent actualització
+        if self.progress_timer:
+            self.root.after_cancel(self.progress_timer)
+        
+        next_update = random.randint(5000, 30000)
+        self.progress_timer = self.root.after(next_update, self.store_progress)
+    
+    def save_game_progress(self, game_data):
+        """Guarda el progrés del joc localment"""
+        # Crear directori si no existeix
+        if not os.path.exists('saved_games'):
+            os.makedirs('saved_games')
+        
+        # Nom del fitxer únic
+        filename = f"saved_games/game_{self.player_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        try:
+            with open(filename, 'w') as f:
+                json.dump(game_data, f)
+            
+            # Actualitzar llista de partides guardades
+            self.load_saved_games()
+        except Exception as e:
+            print(f"Error en guardar partida: {e}")
+    
+    def load_saved_games(self):
+        """Carrega les partides guardades localment"""
+        self.saved_games = []
+        
+        if not os.path.exists('saved_games'):
+            return
+            
+        for filename in os.listdir('saved_games'):
+            if filename.endswith('.json'):
+                try:
+                    with open(f'saved_games/{filename}', 'r') as f:
+                        game_data = json.load(f)
+                        game_data['filename'] = filename
+                        self.saved_games.append(game_data)
+                except Exception as e:
+                    print(f"Error en carregar partida {filename}: {e}")
+        
+        # Ordenar per data (més recents primer)
+        self.saved_games.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    
+    def show_load_game_menu(self):
+        """Mostra el menú per carregar partides guardades"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Títol
+        title_label = tk.Label(
+            self.root,
+            text="Carregar Partida",
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack(pady=20)
+        
+        if not self.saved_games:
+            no_games_label = tk.Label(
+                self.root,
+                text="No hi ha partides guardades.",
+                font=self.button_font,
+                bg=self.colors['background'],
+                fg="#7f8c8d"
+            )
+            no_games_label.pack(pady=50)
+        else:
+            # Crear taula de partides guardades
+            tree = ttk.Treeview(
+                self.root,
+                columns=("Jugador", "Mode", "Puntuació", "Data"),
+                show="headings",
+                height=10
+            )
+            
+            # Configurar columnes
+            tree.heading("Jugador", text="Jugador")
+            tree.heading("Mode", text="Mode")
+            tree.heading("Puntuació", text="Puntuació")
+            tree.heading("Data", text="Data")
+            
+            tree.column("Jugador", width=150, anchor="center")
+            tree.column("Mode", width=150, anchor="center")
+            tree.column("Puntuació", width=100, anchor="center")
+            tree.column("Data", width=200, anchor="center")
+            
+            # Afegir dades
+            for game in self.saved_games[:10]:  # Mostrar només les 10 més recents
+                date_str = datetime.fromisoformat(game['timestamp']).strftime('%d/%m/%Y %H:%M')
+                tree.insert("", "end", values=(
+                    game.get('player', 'Anònim'),
+                    game.get('mode', 'Desconegut'),
+                    game.get('score', 0),
+                    date_str
+                ), tags=(game['filename'],))
+            
+            # Scrollbar
+            scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=tree.yview)
+            tree.configure(yscrollcommand=scrollbar.set)
+            
+            tree.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Configurar selecció
+            tree.bind('<<TreeviewSelect>>', lambda e: self.load_selected_game(tree))
+        
+        # Botó tornar
+        back_button = ttk.Button(
+            self.root,
+            text="Tornar",
+            command=self.show_welcome_screen,
+            style='TButton'
+        )
+        back_button.pack(pady=20)
+    
+    def load_selected_game(self, tree):
+        """Carrega la partida seleccionada"""
+        selected_item = tree.selection()
+        if not selected_item:
+            return
+            
+        filename = tree.item(selected_item, 'tags')[0]
+        game_data = None
+        
+        # Trobar les dades de la partida
+        for game in self.saved_games:
+            if game['filename'] == filename:
+                game_data = game
+                break
+        
+        if not game_data:
+            messagebox.showerror("Error", "No s'ha pogut carregar la partida.")
+            return
+        
+        # Demanar confirmació
+        if not messagebox.askyesno("Carregar Partida", "Estàs segur que vols carregar aquesta partida?"):
+            return
+        
+        # Restaurar estat del joc
+        try:
+            self.player_name = game_data.get('player', 'Anònim')
+            self.score = game_data.get('score', 0)
+            self.question_count = game_data.get('question_count', 0)
+            self.seed = game_data.get('seed', random.randint(1, 1000000))
+            random.seed(self.seed)
+            
+            mode = game_data.get('mode', 'Exam')
+            if mode == 'Infinite':
+                operation = game_data.get('operation')
+                if operation:
+                    self.start_selected_operation_mode(
+                        self.get_operation_type(operation),
+                        f"Mode: {operation}"
+                    )
+                else:
+                    self.start_infinite_mode()
+            else:
+                self.start_exam_mode()
+            
+            # Actualitzar temps (aproximat)
+            self.start_time = time.time() - game_data.get('time_elapsed', 0)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"No s'ha pogut carregar la partida: {e}")
+            self.show_welcome_screen()
+    
+    def get_operation_type(self, operation_name):
+        """Retorna el tipus d'operació a partir del seu nom"""
+        operations = {
+            "Suma": 1,
+            "Resta": 2,
+            "Multiplicació": 3,
+            "Divisió": 4
+        }
+        return operations.get(operation_name, None)
+    
+    def finalize_game(self):
+        """Notifica la finalització del joc al servidor"""
+        if not self.game_id:
+            return
+            
+        if self.progress_timer:
+            self.root.after_cancel(self.progress_timer)
+            self.progress_timer = None
+        
+        game_data = {
+            "score": self.score,
+            "question_count": self.question_count,
+            "mode": "Infinite" if self.infinite_mode else "Exam",
+            "operation": self.get_operation_name(),
+            "difficulty": self.get_difficulty_name(),
+            "player": self.player_name,
+            "time_elapsed": self.end_time - self.start_time if self.start_time and self.end_time else 0,
+            "seed": self.seed,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Guardar localment
+        self.save_game_progress(game_data)
+        
+        # Enviar al servidor
+        try:
+            response = requests.post(
+                "https://fun.codelearn.cat/hackathon/game/finalize",
+                json={"game_id": self.game_id, "data": game_data, "score": self.score},
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if not data.get("ok"):
+                    print(f"Error en finalitzar joc: {data.get('reason', 'Unknown error')}")
+        except Exception as e:
+            print(f"Error de connexió en finalitzar joc: {e}")
+    
+    def get_game_status(self):
+        """Obté l'estat del joc des del servidor (opcional)"""
+        if not self.game_id:
+            return None
+            
+        try:
+            response = requests.get(
+                f"https://fun.codelearn.cat/hackathon/game/get_progress?game_id={self.game_id}",
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    return data.get("data")
+                else:
+                    print(f"Error en obtenir estat: {data.get('reason', 'Unknown error')}")
+        except Exception as e:
+            print(f"Error de connexió en obtenir estat: {e}")
+        
+        return None
+    
+    def load_high_scores(self):
+        """Carrega els rècords des d'un fitxer"""
+        try:
+            with open("high_scores.txt", "r") as f:
+                self.high_scores = []
+                for line in f.readlines():
+                    parts = line.strip().split(",")
+                    if len(parts) >= 6:
+                        self.high_scores.append({
+                            "mode": parts[0],
+                            "score": int(parts[1]),
+                            "player": parts[2],
+                            "time": float(parts[3]),
+                            "difficulty": parts[4],
+                            "seed": parts[5]
+                        })
+        except FileNotFoundError:
+            self.high_scores = []
+    
+    def save_high_scores(self):
+        """Guarda els rècords en un fitxer"""
+        with open("high_scores.txt", "w") as f:
+            for record in self.high_scores:
+                f.write(f"{record['mode']},{record['score']},{record['player']},{record['time']},{record['difficulty']},{record.get('seed', 'N/A')}\n")
+    
+    def create_main_menu(self):
+        """Crea el menú principal amb els modes de joc i opcions"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+            
+        # Capçalera amb informació del jugador
+        header_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        header_frame.pack(fill=tk.X, pady=10)
+        
+        tk.Label(
+            header_frame,
+            text=f"Jugador: {self.player_name}",
+            font=("Arial", 12, "bold"),
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        ).pack(side=tk.LEFT, padx=10)
+        
+        tk.Label(
+            header_frame,
+            text=f"Dificultat: {self.get_difficulty_name()}",
+            font=("Arial", 12),
+            bg=self.colors['background'],
+            fg="#7f8c8d"
+        ).pack(side=tk.RIGHT, padx=10)
+        
+        # Títol principal
+        title_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        title_frame.pack(pady=10)
+        
+        title_label = tk.Label(
+            title_frame, 
+            text="Domath", 
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack()
+        
+        subtitle_label = tk.Label(
+            title_frame,
+            text="Professor Domingo",
+            font=self.subtitle_font,
+            bg=self.colors['background'],
+            fg="#7f8c8d"
+        )
+        subtitle_label.pack(pady=(0, 30))
+        
+        # Frame per als botons de modes
+        buttons_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        buttons_frame.pack(pady=10)
+        
+        # Botons de modes de joc
+        modes = [
+            ("Examen de 10 preguntes", self.start_exam_mode, self.colors['primary']),
+            ("Pràctica infinita (1 error)", self.start_infinite_mode, self.colors['success']),
+            ("Selector d'operacions (1 error)", self.show_operation_selector, self.colors['danger']),
+            ("Pràctica ràpida (5 segons)", self.start_speed_mode, self.colors['warning'])
+        ]
+        
+        for text, command, color in modes:
+            btn = tk.Button(
+                buttons_frame,
+                text=text,
+                font=self.button_font,
+                bg=color,
+                fg="white",
+                width=30,
+                height=2,
+                command=command,
+                cursor="hand2",
+                activebackground=self.colors['dark'],
+                relief=tk.RAISED,
+                bd=3
+            )
+            btn.pack(pady=8)
+        
+        # Frame per a botons addicionals
+        bottom_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        bottom_frame.pack(pady=20)
+        
+        # Botons addicionals
+        buttons = [
+            ("Configuració", self.show_settings),
+            ("Rànquings", self.show_high_scores),
+            ("Tornar", self.show_welcome_screen),
+            ("Sortir", self.root.quit)
+        ]
+        
+        for text, command in buttons:
+            btn = tk.Button(
+                bottom_frame,
+                text=text,
+                font=("Arial", 10),
+                bg="#95a5a6",
+                fg="white",
+                width=15,
+                command=command,
+                cursor="hand2"
+            )
+            btn.pack(side=tk.LEFT, padx=10)
+    
+    def get_difficulty_name(self):
+        """Retorna el nom de la dificultat actual"""
+        difficulties = {1: "Fàcil", 2: "Mitjà", 3: "Difícil"}
+        return difficulties.get(self.difficulty, "Desconeguda")
+    
+    def show_settings(self):
+        """Mostra el menú de configuració"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+            
+        # Títol
+        title_label = tk.Label(
+            main_frame,
+            text="Configuració",
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack(pady=20)
+        
+        # Dificultat
+        diff_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        diff_frame.pack(pady=10)
+        
+        tk.Label(
+            diff_frame,
+            text="Nivell de dificultat:",
+            font=("Arial", 12),
+            bg=self.colors['background']
+        ).pack(side=tk.LEFT)
+        
+        self.difficulty_var = tk.IntVar(value=self.difficulty)
+        difficulties = [("Fàcil", 1), ("Mitjà", 2), ("Difícil", 3)]
+        
+        for text, value in difficulties:
+            rb = tk.Radiobutton(
+                diff_frame,
+                text=text,
+                variable=self.difficulty_var,
+                value=value,
+                bg=self.colors['background'],
+                font=("Arial", 11),
+                command=self.update_difficulty_label
+            )
+            rb.pack(side=tk.LEFT, padx=5)
+        
+        # Botó de guardar
+        save_button = tk.Button(
+            main_frame,
+            text="Guardar Configuració",
+            font=self.button_font,
+            bg=self.colors['success'],
+            fg="white",
+            width=20,
+            command=self.save_settings,
+            cursor="hand2"
+        )
+        save_button.pack(pady=20)
+        
+        # Botó tornar
+        back_button = tk.Button(
+            main_frame,
+            text="Tornar al menú",
+            font=("Arial", 10),
+            bg="#95a5a6",
+            fg="white",
+            width=15,
+            command=self.create_main_menu,
+            cursor="hand2"
+        )
+        back_button.pack(pady=10)
+    
+    def update_difficulty_label(self):
+        """Actualitza l'etiqueta de dificultat quan canvia"""
+        self.difficulty = self.difficulty_var.get()
+    
+    def save_settings(self):
+        """Guarda la configuració seleccionada"""
+        self.difficulty = self.difficulty_var.get()
+        messagebox.showinfo("Configuració", "S'han guardat els canvis de configuració.")
+        self.create_main_menu()
+    
+    def show_high_scores(self):
+        """Mostra els rècords guardats"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+            
+        # Títol
+        title_label = tk.Label(
+            main_frame,
+            text="Rànquings",
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack(pady=20)
+        
+        if not self.high_scores:
+            no_scores_label = tk.Label(
+                main_frame,
+                text="Encara no hi ha rècords guardats.",
+                font=("Arial", 12),
+                bg=self.colors['background'],
+                fg="#7f8c8d"
+            )
+            no_scores_label.pack(pady=20)
+        else:
+            # Crear taula de rècords
+            tree = ttk.Treeview(
+                main_frame,
+                columns=("Posició", "Mode", "Puntuació", "Jugador", "Temps", "Dificultat", "Seed"), 
+                show="headings", 
+                height=15
+            )
+            
+            # Configurar columnes
+            tree.heading("Posició", text="Posició")
+            tree.heading("Mode", text="Mode")
+            tree.heading("Puntuació", text="Puntuació")
+            tree.heading("Jugador", text="Jugador")
+            tree.heading("Temps", text="Temps")
+            tree.heading("Dificultat", text="Dificultat")
+            tree.heading("Seed", text="Seed")
+            
+            tree.column("Posició", width=50, anchor="center")
+            tree.column("Mode", width=120, anchor="center")
+            tree.column("Puntuació", width=70, anchor="center")
+            tree.column("Jugador", width=100, anchor="center")
+            tree.column("Temps", width=80, anchor="center")
+            tree.column("Dificultat", width=80, anchor="center")
+            tree.column("Seed", width=80, anchor="center")
+            
+            # Afegir dades ordenades per puntuació i temps
+            sorted_scores = sorted(self.high_scores, key=lambda x: (-x["score"], x["time"]))
+            for i, record in enumerate(sorted_scores[:20], 1):
+                minutes = int(record["time"] // 60)
+                seconds = int(record["time"] % 60)
+                time_str = f"{minutes}:{seconds:02d}" if record["time"] > 0 else "-"
+                
+                tree.insert("", "end", values=(
+                    i,
+                    record["mode"],
+                    record["score"],
+                    record["player"],
+                    time_str,
+                    record.get("difficulty", "Mitjà"),
+                    record.get("seed", "N/A")
+                ))
+            
+            # Scrollbar
+            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=tree.yview)
+            tree.configure(yscrollcommand=scrollbar.set)
+            
+            tree.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Frame per als botons
+        buttons_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        buttons_frame.pack(pady=20)
+        
+        # Botó tornar
+        back_button = tk.Button(
+            buttons_frame,
+            text="Tornar al menú",
+            font=("Arial", 10),
+            bg="#95a5a6",
+            fg="white",
+            width=15,
+            command=self.create_main_menu,
+            cursor="hand2"
+        )
+        back_button.pack(side=tk.LEFT, padx=10)
+        
+        # Botó eliminar rànquings (només si hi ha rànquings)
+        if self.high_scores:
+            delete_button = tk.Button(
+                buttons_frame,
+                text="Eliminar Rànquings",
+                font=("Arial", 10),
+                bg=self.colors['danger'],
+                fg="white",
+                width=15,
+                command=self.delete_high_scores,
+                cursor="hand2"
+            )
+            delete_button.pack(side=tk.RIGHT, padx=10)
+    
+    def generate_operation(self, operation_type=None):
+        """Genera una operació matemàtica aleatòria o del tipus especificat"""
+        if self.difficulty == 1:  # Fàcil
+            min_num, max_num = 1, 50
+        elif self.difficulty == 2:  # Mitjà
+            min_num, max_num = 1, 100
+        else:  # Difícil
+            min_num, max_num = 50, 200
+        
+        n = random.randint(min_num, max_num)
+        n2 = random.randint(min_num, max_num)
+        
+        if operation_type is None:
+            n3 = random.randint(1, 4)
+        else:
+            n3 = operation_type
+        
+        if n3 == 1:  # Suma
+            operacio = f"{n} + {n2}"
+            nresult = n + n2
+        elif n3 == 2:  # Resta
+            if n < n2:
+                n, n2 = n2, n
+            operacio = f"{n} - {n2}"
+            nresult = n - n2
+        elif n3 == 3:  # Multiplicació
+            if self.difficulty == 1:
+                n = random.randint(1, 12)
+                n2 = random.randint(1, 12)
+            operacio = f"{n} × {n2}"
+            nresult = n * n2
+        else:  # Divisió exacta
+            divisors = [x for x in range(1, n+1) if n % x == 0]
+            if divisors:
+                n2 = random.choice(divisors)
+                operacio = f"{n} ÷ {n2}"
+                nresult = n // n2
+            else:
+                operacio = f"{n} + {n2}"
+                nresult = n + n2
+        
+        return operacio, nresult
+    
+    def start_exam_mode(self):
+        """Inicia el mode d'examen de 10 preguntes"""
+        self.infinite_mode = False
+        self.score = 0
+        self.question_count = 0
+        self.selected_operation = None
+        self.lives = 1
+        self.start_time = time.time()
+        self.create_game_interface("Examen de 10 preguntes")
+        self.show_welcome_message()
+        
+        # Iniciar l'enviament periòdic de progrés
+        self.store_progress()
+    
+    def start_infinite_mode(self):
+        """Inicia el mode de pràctica infinita amb només 1 error permès"""
+        self.infinite_mode = True
+        self.score = 0
+        self.question_count = 0
+        self.selected_operation = None
+        self.lives = 1
+        self.start_time = time.time()
+        self.create_game_interface("Pràctica infinita (1 error)")
+        self.next_question()
+        
+        # Iniciar l'enviament periòdic de progrés
+        self.store_progress()
+    
+    def start_speed_mode(self):
+        """Inicia el mode de pràctica ràpida (5 segons per resposta)"""
+        self.infinite_mode = True
+        self.score = 0
+        self.question_count = 0
+        self.selected_operation = None
+        self.lives = 1
+        self.start_time = time.time()
+        self.create_game_interface("Pràctica ràpida (5 segons)")
+        self.next_question_with_timer()
+        
+        # Iniciar l'enviament periòdic de progrés
+        self.store_progress()
+    
+    def next_question_with_timer(self):
+        """Genera la següent pregunta amb temporitzador"""
+        self.next_question()
+        
+        # Iniciar compte enrere de 5 segons
+        self.time_left = 5
+        self.update_timer()
+    
+    def update_timer(self):
+        """Actualitza el temporitzador"""
+        if self.time_left > 0:
+            self.time_left -= 1
+            self.timer_label.config(text=f"Temps: {self.time_left}s")
+            self.root.after(1000, self.update_timer)
+        else:
+            # Temps esgotat
+            self.message_label.config(
+                text=f"Temps esgotat! La resposta correcta era {self.current_result}",
+                fg=self.colors['danger']
+            )
+            self.question_count += 1
+            
+            if not self.infinite_mode and self.question_count >= 10:
+                self.show_exam_results()
+            else:
+                self.root.after(2000, self.next_question_with_timer)
+    
+    def show_operation_selector(self):
+        """Mostra el selector d'operacions"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+            
+        title_label = tk.Label(
+            main_frame,
+            text="Selector d'operacions (1 error)",
+            font=self.title_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        title_label.pack(pady=30)
+        
+        operations_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        operations_frame.pack(pady=20)
+        
+        operations = [
+            ("Suma (+)", 1, self.colors['primary']),
+            ("Resta (-)", 2, self.colors['info']),
+            ("Multiplicació (×)", 3, self.colors['warning']),
+            ("Divisió (÷)", 4, self.colors['success'])
+        ]
+        
+        for op_name, op_type, color in operations:
+            button = tk.Button(
+                operations_frame,
+                text=op_name,
+                font=self.button_font,
+                bg=color,
+                fg="white",
+                width=20,
+                height=2,
+                command=lambda t=op_type, n=op_name: self.start_selected_operation_mode(t, n),
+                cursor="hand2",
+                activebackground=self.colors['dark']
+            )
+            button.pack(pady=8)
+        
+        back_button = tk.Button(
+            operations_frame,
+            text="Tornar al menú",
+            font=("Arial", 12),
+            bg="#95a5a6",
+            fg="white",
+            width=15,
+            command=self.create_main_menu,
+            cursor="hand2"
+        )
+        back_button.pack(pady=(30, 0))
+    
+    def start_selected_operation_mode(self, operation_type, operation_name):
+        """Inicia el mode amb operació seleccionada amb només 1 error permès"""
+        self.infinite_mode = True
+        self.score = 0
+        self.question_count = 0
+        self.selected_operation = operation_type
+        self.lives = 1
+        self.start_time = time.time()
+        self.create_game_interface(f"Mode: {operation_name} (1 error)")
+        self.next_question()
+        
+        # Iniciar l'enviament periòdic de progrés
+        self.store_progress()
+    
+    def create_game_interface(self, mode_title):
+        """Crea la interfície del joc"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
+        # Frame principal
+        main_frame = tk.Frame(self.root, bg=self.colors['background'])
+        main_frame.pack(expand=True, fill=tk.BOTH, padx=20, pady=20)
+            
+        # Capçalera amb informació del jugador i dificultat
+        header_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        header_frame.pack(fill=tk.X, pady=5)
+        
+        tk.Label(
+            header_frame,
+            text=f"Jugador: {self.player_name}",
+            font=("Arial", 12),
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        ).pack(side=tk.LEFT, padx=10)
+        
+        tk.Label(
+            header_frame,
+            text=f"Dificultat: {self.get_difficulty_name()}",
+            font=("Arial", 12),
+            bg=self.colors['background'],
+            fg="#7f8c8d"
+        ).pack(side=tk.RIGHT, padx=10)
+            
+        # Títol del mode
+        self.mode_label = tk.Label(
+            main_frame,
+            text=mode_title,
+            font=("Arial", 16, "bold"),
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        self.mode_label.pack(pady=10)
+        
+        # Informació del joc
+        info_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        info_frame.pack(pady=10)
+        
+        self.score_label = tk.Label(
+            info_frame,
+            text=f"Puntuació: {self.score}",
+            font=("Arial", 12, "bold"),
+            bg=self.colors['background'],
+            fg=self.colors['success']
+        )
+        self.score_label.pack(side=tk.LEFT, padx=20)
+        
+        if self.lives == 1 and (self.infinite_mode or self.selected_operation is not None):
+            self.lives_label = tk.Label(
+                info_frame,
+                text=f"Vides: ❤️",
+                font=("Arial", 12, "bold"),
+                bg=self.colors['background'],
+                fg=self.colors['danger']
+            )
+            self.lives_label.pack(side=tk.LEFT, padx=20)
+        
+        if "Pràctica ràpida" in mode_title:
+            self.timer_label = tk.Label(
+                info_frame,
+                text="Temps: 5s",
+                font=("Arial", 12, "bold"),
+                bg=self.colors['background'],
+                fg=self.colors['warning']
+            )
+            self.timer_label.pack(side=tk.LEFT, padx=20)
+        
+        if not self.infinite_mode:
+            self.progress_label = tk.Label(
+                info_frame,
+                text=f"Pregunta: {self.question_count}/10",
+                font=("Arial", 12, "bold"),
+                bg=self.colors['background'],
+                fg=self.colors['primary']
+            )
+            self.progress_label.pack(side=tk.RIGHT, padx=20)
+        else:
+            self.questions_label = tk.Label(
+                info_frame,
+                text=f"Preguntes contestades: {self.question_count}",
+                font=("Arial", 12, "bold"),
+                bg=self.colors['background'],
+                fg=self.colors['primary']
+            )
+            self.questions_label.pack(side=tk.RIGHT, padx=20)
+        
+        # Area principal del joc
+        self.game_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        self.game_frame.pack(pady=30, expand=True, fill=tk.BOTH)
+        
+        # Operació
+        self.operation_label = tk.Label(
+            self.game_frame,
+            text="",
+            font=self.operation_font,
+            bg=self.colors['background'],
+            fg=self.colors['dark']
+        )
+        self.operation_label.pack(pady=20)
+        
+        # Entrada de resposta
+        self.answer_entry = tk.Entry(
+            self.game_frame,
+            font=self.operation_font,
+            width=15,
+            justify="center",
+            bd=2,
+            relief=tk.GROOVE
+        )
+        self.answer_entry.pack(pady=20)
+        self.answer_entry.bind('<Return>', self.check_answer)
+        
+        # Botó enviar
+        self.submit_button = tk.Button(
+            self.game_frame,
+            text="Enviar resposta",
+            font=self.button_font,
+            bg=self.colors['success'],
+            fg="white",
+            command=self.check_answer,
+            cursor="hand2",
+            activebackground=self.colors['dark']
+        )
+        self.submit_button.pack(pady=10)
+        
+        # Missatge de resposta
+        self.message_label = tk.Label(
+            self.game_frame,
+            text="",
+            font=("Arial", 12),
+            bg=self.colors['background'],
+            wraplength=400
+        )
+        self.message_label.pack(pady=20)
+        
+        # Botons de navegació
+        nav_frame = tk.Frame(main_frame, bg=self.colors['background'])
+        nav_frame.pack(pady=10)
+        
+        menu_button = tk.Button(
+            nav_frame,
+            text="Menú principal",
+            font=("Arial", 10),
+            bg="#95a5a6",
+            fg="white",
+            command=self.create_main_menu,
+            cursor="hand2"
+        )
+        menu_button.pack(side=tk.LEFT, padx=10)
+        
+        if self.infinite_mode:
+            stop_button = tk.Button(
+                nav_frame,
+                text="Aturar pràctica",
+                font=("Arial", 10),
+                bg=self.colors['danger'],
+                fg="white",
+                command=self.stop_infinite_mode,
+                cursor="hand2"
+            )
+            stop_button.pack(side=tk.RIGHT, padx=10)
+        
+        # Guardar partida
+        save_button = tk.Button(
+            nav_frame,
+            text="Guardar Partida",
+            font=("Arial", 10),
+            bg=self.colors['info'],
+            fg="white",
+            command=self.store_progress,
+            cursor="hand2"
+        )
+        save_button.pack(side=tk.LEFT, padx=10)
+    
+    def show_welcome_message(self):
+        """Mostra el missatge de benvinguda per l'examen"""
+        welcome_text = ("Hola, soc en Domingo el vostre professor de matemàtiques. "
+                       "Ara, farem un examen, per cada pregunta correcta sumeu un punt, "
+                       "l'examen és sobre 10. Va, començem!")
+        
+        self.message_label.config(text=welcome_text, fg=self.colors['dark'])
+        self.operation_label.config(text="Fes clic a 'Següent' per començar")
+        self.answer_entry.config(state="disabled")
+        self.submit_button.config(text="Següent", command=self.start_exam)
+    
+    def start_exam(self):
+        """Comença l'examen"""
+        self.answer_entry.config(state="normal")
+        self.submit_button.config(text="Enviar resposta", command=self.check_answer)
+        self.next_question()
+    
+    def next_question(self):
+        """Genera la següent pregunta"""
+        self.current_operation, self.current_result = self.generate_operation(self.selected_operation)
+        self.operation_label.config(text=f"{self.current_operation} = ?")
+        self.answer_entry.delete(0, tk.END)
+        self.answer_entry.focus()
+        self.message_label.config(text="")
+        
+        # Animació d'entrada
+        self.animate_question()
+        
+        if not self.infinite_mode:
+            self.progress_label.config(text=f"Pregunta: {self.question_count + 1}/10")
+        else:
+            if hasattr(self, 'questions_label'):
+                self.questions_label.config(text=f"Preguntes contestades: {self.question_count}")
+    
+    def animate_question(self):
+        """Animació per a la nova pregunta"""
+        self.operation_label.config(fg=self.colors['dark'])
+        
+        # Canvi de color progressiu
+        for i in range(5):
+            color = self.get_intermediate_color("#ffffff", self.colors['dark'], i/5)
+            self.root.after(i*100, lambda c=color: self.operation_label.config(fg=c))
+    
+    def get_intermediate_color(self, start_hex, end_hex, ratio):
+        """Retorna un color intermedi entre dos colors HEX"""
+        def hex_to_rgb(hex):
+            return tuple(int(hex[i:i+2], 16) for i in (1, 3, 5))
+        
+        def rgb_to_hex(rgb):
+            return "#{:02x}{:02x}{:02x}".format(*rgb)
+        
+        start_rgb = hex_to_rgb(start_hex)
+        end_rgb = hex_to_rgb(end_hex)
+        
+        new_rgb = [
+            int(start_rgb[i] + (end_rgb[i] - start_rgb[i]) * ratio)
+            for i in range(3)
+        ]
+        
+        return rgb_to_hex(tuple(new_rgb))
+    
+    def check_answer(self, event=None):
+        """Comprova la resposta de l'usuari"""
+        try:
+            user_answer = int(self.answer_entry.get())
+            self.question_count += 1
+            
+            if user_answer == self.current_result:
+                self.score += 1
+                self.message_label.config(
+                    text="Ben fet! T'atreveixes a fer-ne una altra?",
+                    fg=self.colors['success']
+                )
+                self.animate_correct_answer()
+            else:
+                if self.lives == 1 and (self.infinite_mode or self.selected_operation is not None):
+                    self.lives -= 1
+                    self.message_label.config(
+                        text=f"Incorrecte! Has perdut la teva única vida. Fi del joc.",
+                        fg=self.colors['danger']
+                    )
+                    self.animate_wrong_answer()
+                    self.show_game_over()
+                    return
+                else:
+                    self.message_label.config(
+                        text=f"Incorrecte. La resposta correcta era {self.current_result}",
+                        fg=self.colors['danger']
+                    )
+                    self.animate_wrong_answer()
+            
+            self.score_label.config(text=f"Puntuació: {self.score}")
+            
+            if not self.infinite_mode and self.question_count >= 10:
+                self.show_exam_results()
+            else:
+                self.root.after(2000, self.next_question if not hasattr(self, 'time_left') else self.next_question_with_timer)
+                
+        except ValueError:
+            self.message_label.config(
+                text=f"Si us plau, introdueix un número vàlid. La resposta correcta era {self.current_result}",
+                fg=self.colors['danger']
+            )
+            self.animate_wrong_answer()
+            self.question_count += 1
+            
+            if not self.infinite_mode and self.question_count >= 10:
+                self.show_exam_results()
+            else:
+                self.root.after(2000, self.next_question if not hasattr(self, 'time_left') else self.next_question_with_timer)
+    
+    def animate_correct_answer(self):
+        """Animació per a resposta correcta"""
+        original_bg = self.submit_button.cget('bg')
+        
+        def flash_green(i):
+            if i % 2 == 0:
+                self.submit_button.config(bg=self.colors['success'])
+            else:
+                self.submit_button.config(bg=original_bg)
+            
+            if i > 0:
+                self.root.after(150, flash_green, i-1)
+        
+        flash_green(4)
+    
+    def animate_wrong_answer(self):
+        """Animació per a resposta incorrecta"""
+        original_bg = self.submit_button.cget('bg')
+        
+        def flash_red(i):
+            if i % 2 == 0:
+                self.submit_button.config(bg=self.colors['danger'])
+            else:
+                self.submit_button.config(bg=original_bg)
+            
+            if i > 0:
+                self.root.after(150, flash_red, i-1)
+        
+        flash_red(4)
+    
+    def show_game_over(self):
+        """Mostra el missatge de fi del joc en modes especials"""
+        self.end_time = time.time()
+        time_elapsed = self.end_time - self.start_time
+        
+        self.answer_entry.config(state="disabled")
+        self.submit_button.config(state="disabled")
+        
+        minutes = int(time_elapsed // 60)
+        seconds = int(time_elapsed % 60)
+        
+        stats_text = (f"Has perdut totes les vides!\n"
+                     f"Puntuació final: {self.score}\n"
+                     f"Preguntes contestades: {self.question_count}\n"
+                     f"Temps emprat: {minutes} min {seconds:02d} s\n"
+                     f"Seed d'aquesta partida: {self.seed}")
+        
+        self.message_label.config(text=stats_text, fg=self.colors['danger'])
+        
+        self.submit_button.config(
+            text="Tornar al menú",
+            command=self.create_main_menu,
+            state="normal"
+        )
+        
+        # Notificar finalització del joc
+        self.finalize_game()
+    
+    def show_exam_results(self):
+        """Mostra els resultats finals de l'examen"""
+        self.end_time = time.time()
+        time_elapsed = self.end_time - self.start_time
+        minutes = int(time_elapsed // 60)
+        seconds = int(time_elapsed % 60)
+        
+        if self.score >= 9:
+            result_text = f"Excel·lent! Has fet {self.score}/10"
+            result_color = self.colors['success']
+        elif self.score >= 7:
+            result_text = f"Molt bé! Has fet {self.score}/10"
+            result_color = self.colors['info']
+        elif self.score >= 5:
+            result_text = f"Has aprovat amb {self.score}/10"
+            result_color = self.colors['warning']
+        else:
+            result_text = f"Has suspès amb {self.score}/10. Has de practicar més!"
+            result_color = self.colors['danger']
+        
+        result_text += f"\nTemps emprat: {minutes} min {seconds:02d} s\nSeed d'aquesta partida: {self.seed}"
+        
+        # Guardar rècord si s'ha fet una bona puntuació
+        if self.score >= 7:
+            self.high_scores.append({
+                "mode": "Examen",
+                "score": self.score,
+                "player": self.player_name,
+                "time": time_elapsed,
+                "difficulty": self.get_difficulty_name(),
+                "seed": self.seed
+            })
+            self.save_high_scores()
+        
+        self.operation_label.config(text="--- Resultat final ---")
+        self.message_label.config(text=result_text, fg=result_color)
+        self.answer_entry.config(state="disabled")
+        self.submit_button.config(text="Tornar al menú", command=self.create_main_menu)
+        
+        # Notificar finalització del joc
+        self.finalize_game()
+    
+    def stop_infinite_mode(self):
+        """Atura el mode infinit i mostra les estadístiques"""
+        self.end_time = time.time()
+        time_elapsed = self.end_time - self.start_time
+        minutes = int(time_elapsed // 60)
+        seconds = int(time_elapsed % 60)
+        
+        if self.question_count > 0:
+            percentage = (self.score / self.question_count) * 100
+            stats_text = (f"Estadístiques finals:\n"
+                         f"Preguntes contestades: {self.question_count}\n"
+                         f"Respostes correctes: {self.score}\n"
+                         f"Percentatge d'encert: {percentage:.1f}%\n"
+                         f"Temps emprat: {minutes} min {seconds:02d} s\n"
+                         f"Seed d'aquesta partida: {self.seed}")
+            
+            # Guardar rècord si s'han contestat prou preguntes amb bon percentatge
+            if self.question_count >= 20 and percentage >= 80:
+                mode_name = "Pràctica Infinita" + (f" ({self.get_operation_name()})" if self.selected_operation else "")
+                self.high_scores.append({
+                    "mode": mode_name,
+                    "score": self.score,
+                    "player": self.player_name,
+                    "time": time_elapsed,
+                    "difficulty": self.get_difficulty_name(),
+                    "seed": self.seed
+                })
+                self.save_high_scores()
+        else:
+            stats_text = "No has contestat cap pregunta."
+        
+        messagebox.showinfo("Estadístiques", stats_text)
+        
+        # Notificar finalització del joc
+        self.finalize_game()
+        
+        self.create_main_menu()
+    
+    def get_operation_name(self):
+        """Retorna el nom de l'operació seleccionada"""
+        if self.selected_operation == 1:
+            return "Suma"
+        elif self.selected_operation == 2:
+            return "Resta"
+        elif self.selected_operation == 3:
+            return "Multiplicació"
+        elif self.selected_operation == 4:
+            return "Divisió"
+        return ""
+    
+    def run(self):
+        """Executa l'aplicació"""
+        self.root.mainloop()
+
+if __name__ == "__main__":
+    try:
+        app = MathGameApp()
+        app.run()
+    except Exception as e:
+        print(f"Error inesperat: {e}")
+        sys.exit(1)

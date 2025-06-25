@@ -1,0 +1,421 @@
+body {
+  font-family: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa; /* Color de fons unificat */
+  margin: 0;
+  padding: 40px; /* Manté el padding del primer bloc */
+  text-align: center;
+  color: #374151; /* Gris fosc suau unificat */
+  background: url("https://img.freepik.com/vector-gratis/papel-tapiz-fondo-abstracto-vector-patron-circulo-geometrico-gris_53876-140223.jpg?semt=ais_hybrid&w=740")
+    no-repeat center center fixed;
+  background-size: cover;
+  position: relative;
+  color: rgb(0, 0, 0); /* Aquest color és pel text del body per defecte, si es fa servir. El text dels elements (h1, form, etc.) es sobrescriurà. */
+}
+
+/* S'ha ELIMINAT completament el bloc 'body::before' que creava la foscor del fons */
+
+h1 {
+  color: #2563eb; /* Blau suau unificat */
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  letter-spacing: 1.5px; /* Espaiat de lletra unificat */
+  text-transform: uppercase;
+  text-shadow: none; /* Sense ombra de text unificat */
+}
+
+form {
+  background: #ffffff;
+  display: inline-block; /* Unificat per centrar el formulari */
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Ombra unificada */
+  transition: box-shadow 0.3s ease;
+  max-width: 320px; /* Max-width unificat */
+  width: 100%; /* Amplada unificada */
+  margin: auto; /* Manté el marge automàtic per centrar */
+}
+
+form:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); /* Ombra hover unificada */
+}
+
+label {
+  cursor: pointer; /* Cursor unificat */
+  font-weight: 600;
+  color: #374151; /* Color de text unificat */
+  user-select: none; /* User-select unificat */
+  display: flex; /* Display flex per layout unificat */
+  align-items: center; /* Centrat vertical unificat */
+  margin-bottom: 12px;
+  gap: 8px; /* Gap unificat */
+  font-size: 16px;
+  text-align: left; /* Manté text-align left del primer bloc */
+}
+
+select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1.5px solid #d1d5db; /* Border color unificat */
+  border-radius: 8px;
+  background-color: #f9fafb; /* Background color unificat */
+  color: #374151; /* Color de text unificat */
+  appearance: none; /* Elimina l'estil per defecte del navegador */
+  cursor: pointer;
+  box-shadow: none; /* Sense ombra per defecte */
+  transition: border-color 0.3s ease;
+}
+
+select:hover,
+select:focus {
+  border-color: #2563eb; /* Border color hover/focus unificat */
+  outline: none;
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.4); /* Ombra hover/focus unificada */
+}
+
+button[type="submit"],
+button#startGame {
+  background-color: #2563eb; /* Color de fons unificat */
+  color: #ffffff; /* Color de text unificat */
+  font-size: 18px; /* Mida de font unificada */
+  font-weight: 700; /* Pes de font unificat */
+  padding: 12px 36px; /* Padding unificat per botons de submit */
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease; /* Transició unificada */
+  user-select: none; /* User-select unificat */
+  letter-spacing: 2px; /* Espaiat de lletra unificat */
+  text-transform: uppercase;
+  margin-top: 20px;
+}
+
+button[type="submit"]:hover,
+button#startGame:hover {
+  background-color: #1e40af; /* Color de fons hover unificat */
+  transform: scale(1.05); /* Transformació hover unificada */
+}
+
+button#startGame {
+  padding: 14px 48px; /* Manté el padding del segon bloc per startGame si és diferent */
+  font-family: "Poppins", sans-serif; /* Assegura la font per startGame */
+}
+
+button#startGame:active {
+  transform: scale(0.95); /* Animació active unificada */
+}
+
+.contenidor-drop,
+.contenidor-elements {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.zona-drop {
+  width: 110px;
+  height: 110px;
+  background-color: #e5e7eb; /* Color de fons unificat */
+  border: 2px dashed #9ca3af; /* Border unificat */
+  border-radius: 12px;
+  font-size: 22px; /* Mida de font unificada */
+  color: #6b7280; /* Color de text unificat */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.zona-drop.dragover {
+  background-color: #dbeafe; /* Color de fons unificat */
+  border-color: #3b82f6; /* Border color unificat */
+  color: #2563eb; /* Color de text unificat */
+}
+
+/* Estil del botó "TORNAR ALS JOCS" de la secció del formulari, i ara també per "Tornar al Menú" */
+.element-tornar {
+  background-color: #2563eb; /* Color de fons unificat */
+  color: #ffffff; /* Color de text unificat */
+  padding: 14px 24px; /* Padding unificat */
+  border-radius: 16px;
+  cursor: pointer; /* Canviat de 'grab' a 'pointer' per a un botó */
+  font-size: 18px; /* Mida de font unificada */
+  font-weight: 600;
+  box-shadow: none; /* Sense ombra */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  user-select: none; /* User-select unificat */
+  border: 0; /* Manté border: 0 del primer bloc */
+  text-decoration: none; /* Assegura que no tingui subratllat com un enllaç */
+  display: inline-block; /* Per poder aplicar padding/margins correctament a un <a> o <button> */
+}
+
+.element-tornar:hover {
+  background-color: #1e40af; /* Color de fons hover unificat */
+  transform: scale(1.05);
+}
+
+
+/* --- Estils per a les opcions de resposta (Vermell/Verd) --- */
+.option.correct {
+  background-color: #22c55e !important; /* Verd viu */
+  color: white !important;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.6) !important; /* Ombra de resplendor verda */
+  border: 2px solid #16a34a !important; /* Borde verd més fosc */
+  /* transform: scale(1.05); */ /* Eliminat per no interferir amb el feedback */
+}
+
+.option.incorrect {
+  background-color: #ef4444 !important; /* Vermell viu */
+  color: white !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important; /* Ombra de resplendor vermella */
+  border: 2px solid #dc2626 !important; /* Borde vermell més fosc */
+  opacity: 0.7; /* Una mica de transparència per les incorrectes no seleccionades */
+}
+
+/* Desactivar efectes hover un cop s'ha respost */
+.option.correct:hover,
+.option.incorrect:hover {
+    transform: none !important; /* Elimina l'efecte hover d'escala */
+    cursor: default !important; /* Canvia el cursor a per defecte */
+    /* Mantenir la box-shadow del feedback, no la de l'hover original */
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.6) !important; /* O la vermella */
+}
+
+/* --- Estils per al text de feedback (#feedback) --- */
+#feedback {
+  font-size: 24px; /* Mida de font per al feedback */
+  font-weight: 700;
+  min-height: 40px;
+  margin-bottom: 25px;
+  user-select: none;
+  /* El color es defineix per les classes correct-text/error-text */
+}
+
+#feedback.correct-text {
+    color: #16a34a; /* Verd per a "Correcte!" */
+}
+
+#feedback.error-text {
+    color: #dc2626; /* Vermell per a "Incorrecte." */
+}
+
+
+/* --- Estils per al cronòmetre, puntuació i pregunta (ajustos de visibilitat) --- */
+
+#crono {
+  font-size: 20px; /* Una mica més petit per no destacar tant */
+  font-weight: 600; /* Menys negreta */
+  color: #1a237e; /* Blau fosc, seriós */
+  background-color: #e3f2fd; /* Fons blau molt clar, subtil */
+  padding: 10px 20px; /* Padding ajustat */
+  border-radius: 12px; /* Lleugerament menys arrodonit */
+  display: inline-block;
+  min-width: 120px;
+  user-select: none;
+  letter-spacing: 1px; /* Espaiat de lletra reduït */
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15); /* Ombra més subtil */
+}
+
+/* Estils per a la puntuació i progrés (destacar més) */
+.score-progress p {
+  margin: 0;
+  font-size: 22px; /* Més gran */
+  font-weight: 800; /* Més negreta */
+  color: #1e40af; /* Blau més fosc per destacar */
+}
+
+/* La pregunta ara hauria de ser més destacada */
+#question {
+  font-size: 32px; /* Encara més gran */
+  font-weight: 900; /* Més negreta */
+  color: #000000; /* Negre per a màxim contrast */
+  margin-bottom: 40px; /* Marge més gran per separar de les opcions */
+  max-width: 100%;
+  line-height: 1.4;
+}
+
+
+/* --- Resta d'estils ja definits --- */
+
+.game-header {
+  display: flex;
+  justify-content: space-between; /* Espai entre crono i score/progress */
+  align-items: center;
+  width: 100%;
+  max-width: 800px; /* Limita l'ample del header */
+  margin: 0 auto 30px auto; /* Centrat i amb marge inferior */
+  background-color: #ffffff; /* Fons pel header */
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box; /* Inclou padding en l'ample */
+}
+
+.game-content-panel {
+  background: #ffffff;
+  padding: 30px 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Ombra més pronunciada */
+  max-width: 700px; /* Ample màxim per al contingut principal */
+  width: 100%;
+  margin: 0 auto; /* Centrat */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centra elements fills verticalment */
+  min-height: 400px; /* Alçada mínima per a la pantalla de joc */
+  justify-content: space-between; /* Distribueix l'espai entre els fills */
+  box-sizing: border-box;
+}
+
+/* CANVIS CLAU AQUÍ: Layout vertical i amplada uniforme per a les opcions */
+#options {
+  display: flex;
+  flex-direction: column; /* CLAU: Posa les opcions en vertical */
+  justify-content: center;
+  align-items: center; /* Centra els botons horitzontalment */
+  gap: 15px; /* Espaiat entre opcions */
+  margin-bottom: 30px; /* Marge més gran */
+  width: 100%; /* Ocupa tot l'ample disponible */
+}
+
+.option {
+  background-color: #2563eb;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  padding: 16px 32px;
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
+  
+  width: 90%; /* CLAU: Amplada per a les opcions, adaptant-se al panell */
+  max-width: 450px; /* CLAU: Limita l'amplada màxima en pantalles grans */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box; /* Inclou padding en l'amplada */
+}
+
+.option:hover {
+  background-color: #1e40af;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Resultats finals (es mantenen) */
+#resultat {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+}
+
+#resultat h2 {
+  color: #2563eb;
+  margin-bottom: 16px;
+}
+
+#resultat p {
+  font-size: 20px;
+  margin-bottom: 32px;
+  color: #374151;
+}
+
+/* Botó resultats (s'hauria d'afegir l'ID "tornarMenuResultat" a l'HTML) */
+#resultat button {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 12px 36px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease;
+}
+
+#resultat button:hover {
+  background-color: #1e40af;
+}
+
+/* Media Queries per a responsivitat */
+@media (max-width: 768px) {
+  .game-header {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+  #crono {
+    font-size: 18px; /* Més petit en mòbils */
+    padding: 8px 15px;
+  }
+  .score-progress {
+    text-align: center;
+    width: 100%;
+  }
+  .score-progress p {
+    font-size: 18px; /* Una mica més petit en mòbils */
+  }
+  .game-content-panel {
+    padding: 20px;
+    min-height: 350px;
+  }
+  #question {
+    font-size: 26px; /* Mida més adaptada a mòbils */
+    margin-bottom: 25px;
+  }
+  .option {
+    padding: 14px 20px; /* Padding ajustat */
+    font-size: 18px; /* Mida de font ajustada */
+    width: 95%; /* Ocupa gairebé tot l'ample en mòbils */
+    max-width: none; /* Elimina la max-width en mòbils */
+  }
+  #feedback {
+    font-size: 20px;
+    min-height: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 20px;
+  }
+  h1 {
+    font-size: 28px;
+  }
+  .game-header {
+    padding: 10px;
+  }
+  #crono {
+    font-size: 16px;
+    padding: 6px 12px;
+  }
+  .score-progress p {
+    font-size: 16px;
+  }
+  .game-content-panel {
+    padding: 15px;
+    min-height: 300px;
+  }
+  #question {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  .option {
+    padding: 12px 18px;
+    font-size: 16px;
+  }
+  #feedback {
+    font-size: 18px;
+    min-height: 30px;
+  }
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ChemiQuiz: Omplir Buits</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="jquery-3.7.1.min.js"></script>
+  </head>
+  <body>
+    <h1>ChemiQuiz: Omplir Buits</h1>
+
+    <section id="formulari">
+      <form id="configuracioJoc">
+        <p>
+          En aquest mode hauràs d'omplir els buits de les frases amb els elements
+          o conceptes de la taula periòdica que corresponguin, ja sigui escrivint-los
+          o arrossegant-los.
+        </p>
+        <br />
+
+        <label>
+          Dificultat:
+          <select id="dificultat">
+            <option value="facil">Fàcil (5 preguntes)</option>
+            <option value="mitja">Mitjà (7 preguntes)</option>
+            <option value="dificil">Difícil (10 preguntes)</option>
+          </select> </label
+        ><br /><br />
+        <label>
+          Tipus de pregunta:
+          <select id="tipusPregunta">
+            <option value="drag">Arrossegar i deixar anar</option>
+            <option value="type">Escriure</option>
+            <option value="both">Ambdues</option>
+          </select> </label
+        ><br /><br />
+        <label>
+          Temps per pregunta (segons):
+          <select id="tempsLimit">
+            <option value="0">Sense temps límit</option>
+            <option value="30">30 segons</option>
+            <option value="45">45 segons</option>
+            <option value="60">60 segons</option>
+            <option value="90">90 segons</option>
+          </select> </label
+        ><br /><br />
+
+        <button type="submit">Començar joc</button>
+        <br /><br /><br />
+        <a href="../jocs" style="text-decoration: none;" class="element"
+          >TORNAR A JOCS</a
+        >
+      </form>
+    </section>
+
+    <section id="joc" style="display: none">
+      <div id="infoJoc">
+        <div id="crono"></div>
+        <div id="tempsRestant" style="display: none;">Temps: <span id="segonsRestants"></span>s</div>
+      </div>
+      <div id="preguntaBuit"></div>
+      <div class="contenidor-elements" id="zonaElements"></div>
+      <div class="controls-joc">
+        <button id="btnNoHoSe" class="element boto-no-se">No ho sé</button>
+        <button onclick="tornarEnrereEnJoc()" class="element boto-retorn">
+          Tornar al Menú
+        </button>
+      </div>
+    </section>
+
+    <section id="resultat" style="display: none">
+      <h2>Resultat Final</h2>
+      <p id="missatgeFinal"></p>
+      <button onclick="reiniciarJoc()" class="element">Tornar al Menú</button>
+    </section>
+
+    <script src="script.js"></script>
+  </body>
+</html>

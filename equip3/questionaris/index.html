@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MiniJoc - Taula Periòdica</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="jquery-3.7.1.min.js"></script>
+  </head>
+  <body>
+    <h1>ChemiQuiz: Qüestionaris</h1>
+
+    <section id="formulari">
+      <form id="configuracioJoc">
+        <h3>Respon les preguntes tipus test sobre la taula Periòdica.</h3>
+        <p>
+          En aquest mode podràs millorar els teus coneixements sobre la Taula
+          Periòdica.
+        </p>
+        <br />
+
+        <label>
+          Dificultat:
+          <select id="dificultat">
+            <option value="facil">Fàcil (10 preguntes)</option>
+            <option value="mitja">Mitjà (15 preguntes)</option>
+            <option value="dificil">Difícil (20 preguntes)</option>
+          </select>
+        </label>
+        <br /><br />
+
+        <label>
+          Tipus de preguntes:
+          <select id="tipus_preguntes">
+            <option value="aleatori">Aleatori</option>
+          </select>
+        </label>
+        <br /><br />
+
+        <button type="submit">Començar joc</button>
+        </br></br></br>
+        <a href="../jocs" style="text-decoration: none;" class="element-tornar">TORNAR ALS JOCS</a>
+      </form>
+    </section>
+
+    <section id="joc" style="display: none">
+      <div class="game-header">
+        <div id="crono">00:00</div>
+        <div class="score-progress">
+          <p id="score">Puntuació: 0</p>
+          <p id="progress">Pregunta 0 de 0</p>
+        </div>
+      </div>
+
+      <div class="game-content-panel">
+        <p id="question">Pregunta apareixerà aquí</p>
+        <div id="options"></div>
+        <p id="feedback"></p>
+        <button id="tornarMenuJoc" class="element-tornar">Tornar al Menú</button>
+      </div>
+    </section>
+
+    <section id="resultat" style="display: none">
+      <h2>Resultat Final</h2>
+      <p id="missatgeFinal"></p>
+      <button onclick="reiniciarJoc()">Tornar al Menú</button>
+    </section>
+
+    <script src="script.js"></script>
+  </body>
+</html>

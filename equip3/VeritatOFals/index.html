@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ChemiQuiz: Veritat o Fals</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="jquery-3.7.1.min.js"></script>
+  </head>
+  <body>
+    <h1>ChemiQuiz: Veritat o Fals</h1>
+
+    <section id="formulari-vf">
+      <form id="configuracioJocVf">
+        <h3>Decideix si les afirmacions sobre la Taula Periòdica són vertaderes o falses.</h3>
+        <p>
+          Posa a prova els teus coneixements amb afirmacions sobre els elements
+          i les seves propietats.
+        </p>
+        <br />
+
+        <label>
+          Dificultat:
+          <select id="dificultatVf">
+            <option value="facil">Fàcil (10 preguntes)</option>
+            <option value="mitja">Mitjà (15 preguntes)</option>
+            <option value="dificil">Difícil (20 preguntes)</option>
+          </select>
+        </label>
+        <br /><br />
+
+        <button type="submit">Començar joc</button>
+        <br /><br /><br />
+        <a href="../jocs" class="element-tornar" style="text-decoration: none;">TORNAR ALS JOCS</a>
+      </form>
+    </section>
+
+    <section id="joc-vf" style="display: none">
+        <div class="game-header-vf">
+            <div id="crono-vf"></div>
+            <div class="score-progress-vf">
+                <p id="score-vf">Puntuació: 0</p>
+                <p id="progress-vf">Pregunta 0 de 0</p>
+            </div>
+        </div>
+
+        <div class="game-content-panel-vf">
+            <p id="question-vf">L'hidrogen és un metall alcalí.</p>
+            <div id="options-vf">
+                <button class="option-vf true-button">VERITAT</button>
+                <button class="option-vf false-button">FALS</button>
+            </div>
+            <p id="feedback-vf"></p>
+            <button id="tornarMenuJocVf" class="element-tornar">Tornar al Menú</button>
+        </div>
+    </section>
+
+    <section id="resultat-vf" style="display: none">
+      <h2>Resultat Final</h2>
+      <p id="missatgeFinalVf"></p>
+      <button id="tornarMenuResultatVf" class="element-tornar">Tornar al Menú</button>
+    </section>
+
+    <script src="script.js"></script>
+  </body>
+</html>
